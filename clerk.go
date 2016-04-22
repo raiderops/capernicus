@@ -54,6 +54,7 @@ var ostype = flag.String("osType", "EMPTY", "Operating System Type (e.g, CentOS|
 var osversion = flag.String("osVersion", "EMPTY", "Operating System Version (e.g, 7.0)")
 var machinearch = flag.String("archType", "EMPTY", "Machine Architecture Type (e.g, x86_64)")
 var datastore = flag.String("datastore", "EMPTY", "Datastore name to run against (e.g, provisioner)")
+var region = flag.String("region", "EMPTY", "Geographical region to run against (Atlanta)")
 
 // Type Definitions
 type AnsibleGroups struct {
