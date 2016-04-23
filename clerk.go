@@ -165,7 +165,6 @@ func main() {
 		// adding host to datastore -- should never have a host added to both datastores at the same time.
 		addHost(aHost, dBase)
 
-
 		fmt.Println("\n[ INFO ] --> Updating Inventory file for Environment: " + ENV + " in " + dBase + "...............\n")
 		updateInventoryFile(ENV, dBase)
 		fmt.Println("\n[ OK ] --> Successfully Updated Inventory File for " + ENV + "\n")
@@ -727,7 +726,6 @@ func main() {
 		// we add the host before checking groups
 		addHost(aHost, *datastore)
 
-
 		if *groups != "EMPTY" {
 			if strings.Contains(*groups, ",") {
 				gList := strings.Split(*groups, ",")
@@ -806,50 +804,47 @@ func main() {
 		os.Exit(0)
 	}
 
-        if *hostdetails {
-                // ensure that the data store has been provided
-                if *datastore == "EMPTY" {
-                        fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -datastore when it is required.\n")
-                        os.Exit(1)
-                }
+	if *hostdetails {
+		// ensure that the data store has been provided
+		if *datastore == "EMPTY" {
+			fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -datastore when it is required.\n")
+			os.Exit(1)
+		}
 
-                // ensure that a fully qualified hostname has been provided
-                if *fqdn == "EMPTY" {
-                        fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -fqdn when it is required.\n")
-                        os.Exit(1)
-                }
+		// ensure that a fully qualified hostname has been provided
+		if *fqdn == "EMPTY" {
+			fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -fqdn when it is required.\n")
+			os.Exit(1)
+		}
 
-                //display the host details
-                displayHost(*fqdn, ENV, *datastore)
-                os.Exit(0)
-        }
+		//display the host details
+		displayHost(*fqdn, ENV, *datastore)
+		os.Exit(0)
+	}
 
+	if *groupdetails {
+		// ensure that the data store has been provided
+		if *datastore == "EMPTY" {
+			fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -datastore when it is required.\n")
+			os.Exit(1)
+		}
 
-        if *groupdetails {
-                // ensure that the data store has been provided
-                if *datastore == "EMPTY" {
-                        fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -datastore when it is required.\n")
-                        os.Exit(1)
-                }
+		// ensure that a group has been provided
+		if *group == "EMPTY" {
+			fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -group when it is required.\n")
+			os.Exit(1)
+		}
 
-                // ensure that a group has been provided
-                if *group == "EMPTY" {
-                        fmt.Println("\n[ ERROR ] --> You did not provide a value for the sub-flag -group when it is required.\n")
-                        os.Exit(1)
-                }
+		// validate group
+		if !groupExists(*group, ENV, *datastore) {
+			fmt.Println("\n[ ERROR ] --> The Group: " + *group + " does not exist in Environment: " + ENV + " in datastore: " + *datastore + ".\n")
+			os.Exit(1)
+		}
 
-		 // validate group
-                if !groupExists(*group, ENV, *datastore) {
-                        fmt.Println("\n[ ERROR ] --> The Group: " + *group + " does not exist in Environment: " + ENV + " in datastore: " + *datastore + ".\n")
-                        os.Exit(1)
-                }
-
-
-                //display the group details
-                displayGroup(*group, ENV, *datastore)
-                os.Exit(0)
-        }
-
+		//display the group details
+		displayGroup(*group, ENV, *datastore)
+		os.Exit(0)
+	}
 
 	if *attachhost {
 		//ensure necessary sub-flag values were supplied
@@ -1442,7 +1437,6 @@ func addHost(newHost AnsibleHost, database string) {
 
 }
 
-
 func addEnvironment(newEnv *AnsibleEnvironment, database string) {
 	// Set up connection to database server
 	session, err := mgo.Dial(MONGOIP)
@@ -1586,9 +1580,7 @@ func cloneHost(templateName, hostName, envName, database string) {
 
 	}
 
-
 }
-
 
 func attachHost(hostName string, groupName string, envName string, database string) {
 	// Set up Prefix and host collection details
@@ -1956,7 +1948,6 @@ func deleteHost(hostName, hostEnv, database string) {
 		panic(err)
 	}
 }
-
 
 func deleteGroup(groupName, envName, database string) {
 
@@ -2617,7 +2608,6 @@ func pushOneHost(host string) {
 		fmt.Println("[ ERROR ] --> Failed to remove host from provisioner database.\n")
 		os.Exit(1)
 	}
-
 
 	fmt.Println("\n[ INFO ] --> Updating Inventory file for Environment: " + ENV + " in provisioner...............\n")
 	// Update Inventory File
