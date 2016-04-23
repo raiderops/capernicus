@@ -33,6 +33,7 @@ var listhostopts = flag.Bool("hostOptions", false, "Use this flag to list the ho
 var listgroupopts = flag.Bool("groupOptions", false, "Use this flag to list the groups from the specified database")
 var hostdetails = flag.Bool("hostDetails", false, "Use this flag to display the host details for a given host")
 var groupdetails = flag.Bool("groupDetails", false, "Use this flag to display the group details for a given group")
+var addregion = flag.Bool("addRegion", false, "Use this flag to add a new geographical or logical region")
 
 // Sub-Flag Definitions
 var fqdn = flag.String("fqdn", "EMPTY", "Fully Qualified Domain Name of the host")
@@ -45,11 +46,6 @@ var environment = flag.String("environment", "EMPTY", "The name of an Ansible Co
 var description = flag.String("description", "EMPTY", "A Short Description of the Ansible Group")
 var togroup = flag.String("to-group", "EMPTY", "A valid Ansible group")
 var fromgroup = flag.String("from-group", "EMPTY", "A valid Ansible group")
-var brepoversion = flag.String("baseRepoVersion", "EMPTY", "A valid Pulp Base repository version")
-var urepoversion = flag.String("updatesRepoVersion", "EMPTY", "A valid Pulp Updates repository version")
-var erepoversion = flag.String("extrasRepoVersion", "EMPTY", "A valid Pulp Extras repository version")
-var prepoversion = flag.String("plusRepoVersion", "EMPTY", "A valid Pulp Plus repository version")
-var eplrepoversion = flag.String("epelRepoVersion", "EMPTY", "A valid Pulp Epel repository version")
 var ostype = flag.String("osType", "EMPTY", "Operating System Type (e.g, CentOS|RedHat)")
 var osversion = flag.String("osVersion", "EMPTY", "Operating System Version (e.g, 7.0)")
 var machinearch = flag.String("archType", "EMPTY", "Machine Architecture Type (e.g, x86_64)")
@@ -66,14 +62,6 @@ type AnsibleGroups struct {
 
 type AnsibleHostMeta struct {
 	VarMap map[string]string
-}
-
-type PulpClient struct {
-	Fqdn        string
-	RpmRepos    map[string]string
-	OsType      string
-	OsVersion   string
-	MachineArch string
 }
 
 type AnsibleHost struct {
@@ -153,36 +141,6 @@ func main() {
 		mArch, _ := machineArchReader.ReadString('\n')
 		machArch := strings.Trim(mArch, "\n")
 
-		// get Pulp Base  Repository version of host from stdin
-		baseRepoReader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nEnter version of the Base repository (Enter 1 if uncertain) : ")
-		bRepo, _ := baseRepoReader.ReadString('\n')
-		baseRepo := strings.Trim(bRepo, "\n")
-
-		// get Pulp Update  Repository version of host from stdin
-		updateRepoReader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nEnter version of the Update repository (Enter 1 if uncertain) : ")
-		uRepo, _ := updateRepoReader.ReadString('\n')
-		updatesRepo := strings.Trim(uRepo, "\n")
-
-		// get Pulp Extras  Repository version of host from stdin
-		extrasRepoReader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nEnter version of the Extras Repository (Enter 1 if uncertain) : ")
-		eRepo, _ := extrasRepoReader.ReadString('\n')
-		extrasRepo := strings.Trim(eRepo, "\n")
-
-		// get Pulp Plus  Repository version of host from stdin
-		plusRepoReader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nEnter version of the Plus Repository (Enter 1 if uncertain) : ")
-		pRepo, _ := plusRepoReader.ReadString('\n')
-		plusRepo := strings.Trim(pRepo, "\n")
-
-		// get Pulp Epel  Repository version of host from stdin
-		epelRepoReader := bufio.NewReader(os.Stdin)
-		fmt.Print("\nEnter version of the Epel Repository (Enter 1 if uncertain) : ")
-		eplRepo, _ := epelRepoReader.ReadString('\n')
-		epelRepo := strings.Trim(eplRepo, "\n")
-
 		// validate environment
 		if !envExists(ENV, dBase) {
 			fmt.Println("\n[ FAILED ] --> The environment: " + ENV + " does not exist in the database.\n")
@@ -207,16 +165,6 @@ func main() {
 		// adding host to datastore -- should never have a host added to both datastores at the same time.
 		addHost(aHost, dBase)
 
-		repoMap := make(map[string]string)
-		repoMap["Base"] = baseRepo
-		repoMap["Updates"] = updatesRepo
-		repoMap["Extras"] = extrasRepo
-		repoMap["Plus"] = plusRepo
-		repoMap["Epel"] = epelRepo
-
-		pHost := PulpClient{Fqdn: fName, RpmRepos: repoMap, OsType: osType, OsVersion: osVersion, MachineArch: machArch}
-		addPulpClient(pHost, dBase)
-		fmt.Println("\n[ OK ] --> Successfully added " + pHost.Fqdn + " to the Pulp database.\n")
 
 		fmt.Println("\n[ INFO ] --> Updating Inventory file for Environment: " + ENV + " in " + dBase + "...............\n")
 		updateInventoryFile(ENV, dBase)
@@ -551,10 +499,6 @@ func main() {
 		deleteHost(hName, ENV, dBase)
 		fmt.Println("\n[ OK ] --> Successfully deleted host: " + hName + "\n")
 
-		// delete supplied host from the Pulp repository database
-		fmt.Println("\nDeleting host: " + hName + " from the Pulp Repository database............\n")
-		deletePulpClient(hName, dBase)
-
 		fmt.Println("\n[ INFO] --> Updating Inventory file for Environment: " + ENV + "...............\n")
 		// Update Inventory File
 		updateInventoryFile(ENV, dBase)
@@ -783,17 +727,6 @@ func main() {
 		// we add the host before checking groups
 		addHost(aHost, *datastore)
 
-		repoMap := make(map[string]string)
-		repoMap["Base"] = *brepoversion
-		repoMap["Updates"] = *urepoversion
-		repoMap["Extras"] = *erepoversion
-		repoMap["Plus"] = *prepoversion
-		repoMap["Epel"] = *eplrepoversion
-
-		pHost := PulpClient{Fqdn: *fqdn, RpmRepos: repoMap, OsType: *ostype, OsVersion: *osversion, MachineArch: *machinearch}
-		// we add the pulp client before checking group validity as well
-		addPulpClient(pHost, *datastore)
-		fmt.Println("\n[ OK ] --> Successfully added " + pHost.Fqdn + " to the Pulp database.\n")
 
 		if *groups != "EMPTY" {
 			if strings.Contains(*groups, ",") {
@@ -1044,10 +977,6 @@ func main() {
 		fmt.Println("\nDeleting host: " + *fqdn + "............\n")
 		deleteHost(*fqdn, ENV, *datastore)
 		fmt.Println("\n[ OK ] --> Successfully deleted host: " + *fqdn + "\n")
-
-		// delete supplied host from the Pulp repository database
-		fmt.Println("\nDeleting host: " + *fqdn + " from the Pulp Repository database............\n")
-		deletePulpClient(*fqdn, *datastore)
 
 		fmt.Println("\nUpdating Inventory file for Environment: " + ENV + " in database: " + *datastore + "...............\n")
 		// Update Inventory File
@@ -1513,23 +1442,6 @@ func addHost(newHost AnsibleHost, database string) {
 
 }
 
-func addPulpClient(pulpClient PulpClient, database string) {
-	// Set up connection to database server
-	session, err := mgo.Dial(MONGOIP)
-	if err != nil {
-		panic(err)
-	}
-	defer session.Close()
-	// attatch session to desired database and collection
-	c := session.DB(database).C("pulp_clients")
-
-	fmt.Println("\nAdding " + pulpClient.Fqdn + " to the Pulp Client Database in " + database + "......\n")
-	err = c.Insert(&pulpClient)
-	if err != nil {
-		fmt.Println("\n[ ERROR ] -- Failed to add Pulp client to the " + database + " database.\n")
-		os.Exit(1)
-	}
-}
 
 func addEnvironment(newEnv *AnsibleEnvironment, database string) {
 	// Set up connection to database server
@@ -1674,41 +1586,9 @@ func cloneHost(templateName, hostName, envName, database string) {
 
 	}
 
-	clonePulpClient(templateName, hostName, database)
 
 }
 
-func clonePulpClient(template, host, database string) {
-	// setup host collection reference
-	pulpCollection := "pulp_clients"
-
-	// Set up connection to database server
-	session, err := mgo.Dial(MONGOIP)
-	if err != nil {
-		panic(err)
-	}
-	defer session.Close()
-
-	// attatch session to desired database and collection
-	c := session.DB(database).C(pulpCollection)
-
-	result := PulpClient{}
-	// executes the query and returns single match
-	err = c.Find(bson.M{"fqdn": template}).One(&result)
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Could not find template host: " + template + " in " + database + ".\n")
-		os.Exit(1)
-	}
-
-	result.Fqdn = host
-
-	err = c.Insert(&result)
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Unable to add host: " + host + " to pulp client database in " + database + ".\n")
-		os.Exit(1)
-	}
-
-}
 
 func attachHost(hostName string, groupName string, envName string, database string) {
 	// Set up Prefix and host collection details
@@ -2077,35 +1957,6 @@ func deleteHost(hostName, hostEnv, database string) {
 	}
 }
 
-func deletePulpClient(hostName, database string) {
-	colName := "pulp_clients"
-
-	// Set up connection to database server
-	session, err := mgo.Dial(MONGOIP)
-	if err != nil {
-		panic(err)
-	}
-	defer session.Close()
-
-	// attatch session to desired database and collection
-	c := session.DB(database).C(colName)
-
-	result := PulpClient{}
-	// executes the query and returns single match
-	err = c.Find(bson.M{"fqdn": hostName}).One(&result)
-	if err != nil {
-		fmt.Println("\n[ WARNING ] --> The host: " + hostName + " does not exist in the Pulp database. Continuing without deleting.\n")
-		return
-	}
-
-	err = c.Remove(bson.M{"fqdn": hostName})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("\n[ OK ] --> Successfully deleted host: " + hostName + " from the Pulp Repository database\n")
-
-}
 
 func deleteGroup(groupName, envName, database string) {
 
@@ -2444,7 +2295,6 @@ func pullOneHost(host string) {
 
 	hostCollection := strings.ToLower(strings.Replace(ENV, "-", "_", -1)) + "_hosts"
 	groupCollection := strings.ToLower(strings.Replace(ENV, "-", "_", -1)) + "_groups"
-	pulpCollection := "pulp_clients"
 
 	// Set up connection to database server
 	session, err := mgo.Dial(MONGOIP)
@@ -2591,34 +2441,6 @@ func pullOneHost(host string) {
 		os.Exit(1)
 	}
 
-	// Get the pulp client information from custodian and add it to provisioner
-	c10 := session.DB(custDB).C(pulpCollection)
-	pClient := PulpClient{}
-	err = c10.Find(bson.M{"fqdn": host}).One(&pClient)
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Failed to retreive pulp information for host: " + host + " from custodian database.\n")
-		os.Exit(1)
-	}
-
-	c11 := session.DB(provDB).C(pulpCollection)
-	provPulpClient := PulpClient{}
-	err = c11.Find(bson.M{"fqdn": host}).One(&provPulpClient)
-	if err != nil {
-		// Add pulp client to provisioner  pulp clients database
-		addPulpClient(pClient, "provisioner")
-	} else {
-		fmt.Println("\n[ INFO ] --> The host: " + host + " is already in the provisioner pulp client database...skipping add.\n")
-	}
-
-	// Delete pulp client from custodian database
-	fmt.Println("\n[ INFO ] --> Deleting host from custodian pulp clients database.\n")
-	c12 := session.DB(custDB).C(pulpCollection)
-	err = c12.Remove(bson.M{"fqdn": host})
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Failed to remove host: " + host + " from custodian pulp clients database.\n")
-		os.Exit(1)
-	}
-	fmt.Println("\n[ OK ] --> Successfully deleted host: " + host + " from custodain pulp clients database.\n")
 }
 
 // push hosts from provisioner database into custodian database
@@ -2629,7 +2451,6 @@ func pushOneHost(host string) {
 
 	hostCollection := strings.ToLower(strings.Replace(ENV, "-", "_", -1)) + "_hosts"
 	groupCollection := strings.ToLower(strings.Replace(ENV, "-", "_", -1)) + "_groups"
-	pulpCollection := "pulp_clients"
 
 	// Set up connection to database server
 	session, err := mgo.Dial(MONGOIP)
@@ -2797,40 +2618,6 @@ func pushOneHost(host string) {
 		os.Exit(1)
 	}
 
-	// Get the pulp client information from provisioner and add it to custodian
-	c11 := session.DB(provDB).C(pulpCollection)
-	pClient := PulpClient{}
-	err = c11.Find(bson.M{"fqdn": host}).One(&pClient)
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Failed to retreive pulp information for host: " + host + " from provisioner database.\n")
-		os.Exit(1)
-	}
-
-	custPulpClient := PulpClient{}
-	c12 := session.DB(custDB).C(pulpCollection)
-	err = c12.Find(bson.M{"fqdn": host}).One(&custPulpClient)
-	if err != nil {
-		// Add pulp client to custodian pulp clients database
-		fmt.Println("\n[ INFO ] --> Adding host: " + host + " to custodian pulp client database.\n")
-		err = c12.Insert(&pClient)
-		if err != nil {
-			fmt.Println("\n[ ERROR ] --> Failed to add host: " + host + " to custodian pulp client database.\n")
-			os.Exit(1)
-		}
-
-	} else {
-		fmt.Println("\n[ INFO ] --> The host: " + host + " is already in the custodian pulp client database...skipping add.\n")
-	}
-
-	// Delete pulp client from provisioner database
-	fmt.Println("\n[ INFO ] --> Deleting host from provisioner pulp clients database.\n")
-	c13 := session.DB(provDB).C(pulpCollection)
-	err = c13.Remove(bson.M{"fqdn": host})
-	if err != nil {
-		fmt.Println("\n[ ERROR ] --> Failed to remove host: " + host + " from provisioner pulp client database.\n")
-		os.Exit(1)
-	}
-	fmt.Println("\n[ OK ] --> Successfully deleted host: " + host + " from provisioner pulp client database.\n")
 
 	fmt.Println("\n[ INFO ] --> Updating Inventory file for Environment: " + ENV + " in provisioner...............\n")
 	// Update Inventory File
